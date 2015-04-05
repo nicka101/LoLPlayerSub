@@ -1,0 +1,30 @@
+﻿<Controls:MetroWindow x:Class="LoLPlayerSub.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+    mc:Ignorable="d"
+    Title="LoLPlayerSub" Height="350" Width="525" ResizeMode="CanMinimize">
+    <Grid Margin="0">
+        <Button Content="Export League Game Data" Margin="10,82,10,198" Click="ExportLeagueData" />
+        <Button Content="Locate League Installation" Margin="345,128,10,0" Click="LocateLeague" Height="26" VerticalAlignment="Top" />
+        <TextBox x:Name="_leagueLocation" Height="23" Margin="10,128,179,0" TextWrapping="Wrap" Text="C:/Riot Games/League of Legends/RADS" VerticalAlignment="Top" TextChanged="OnLeagueDirectoryChange" />
+        <TextBox x:Name="_serialized" Margin="10,159,10,0" TextWrapping="Wrap" Text="League Game Data" TextChanged="OnSerializedDataChange" GotKeyboardFocus="SelectAll" GotMouseCapture="MouseSelectAll" Height="30" VerticalAlignment="Top" />
+        <ScrollViewer x:Name="_output" Margin="10,194,10,0" Height="69" VerticalAlignment="Top">
+            <StackPanel>
+                <ItemsControl x:Name="_outputData" ItemsSource="{Binding Path=Output}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Path=.}" Foreground="Black" FontFamily="Consolas"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+        <Button x:Name="_subButton" Content="Substitute for a friend" Margin="10,268,10,0" Click="PerformSub" Height="43" VerticalAlignment="Top" IsEnabled="{Binding Path=SubstitutionButtonEnabled}" />
+        <TextBlock Margin="10,10,10,244" TextWrapping="Wrap">
+            <Run Text="This program is designed to serialize the data related to a game of LoL, making it simple for giving your friends all the information needed for them to replace you in game. Please note, this program does not have access to your password or even require anything of the sort. All data serialized is ONLY valid for the current game and player." />
+        </TextBlock>
+    </Grid>
+</Controls:MetroWindow>
