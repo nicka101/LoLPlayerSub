@@ -29,9 +29,9 @@ namespace LoLPlayerSub
         private static readonly byte[] MAGIC_HEADER = new byte[] { 76, 111, 76, 83, 117, 98 }; //UTF8 / ASCII for LoLSub
         private static readonly Regex versionSplitRegex = new Regex(@"(\d+)\.(\d+)\.(\d+)\.(\d+)");
         private static readonly Regex leagueProgramRegex = new Regex(@""".*/RADS/solutions/lol_game_client_sln/releases/(\d+\.\d+\.\d+\.\d+)/deploy/League of Legends\.exe"" " +
-           @"""8394"" "".*"" "".*/RADS/projects/lol_air_client/releases/(\d+\.\d+\.\d+\.\d+)/deploy/+LolClient\.exe"" ""(\d+\.\d+\.\d+\.\d+) (\d+) ([^ ]*) (\d+)""");
+           @"""8394"" "".*"" "".*"" ""(\d+\.\d+\.\d+\.\d+) (\d+) ([^ ]*) (\d+)""");
         private const String processNameFormatString = "{0}/solutions/lol_game_client_sln/releases/{1}/deploy/League of Legends.exe";
-        private const String processArgsFormatString = @"""8394"" ""LoLPatcher.exe"" ""{0}/projects/lol_air_client/releases/{1}/deploy/LolClient.exe"" ""{2} {3} {4} {5}""";
+        private const String processArgsFormatString = @"""8394"" ""LoLPatcher.exe"" """" ""{0} {1} {2} {3}""";
 
         private LogOutput output = new LogOutput();
         private ButtonEnabled buttonState = new ButtonEnabled();
@@ -58,10 +58,9 @@ namespace LoLPlayerSub
                         String serializedData = SerializeGameInfo(
                             match.Groups[1].Value,
                             match.Groups[2].Value,
-                            match.Groups[3].Value,
-                            ushort.Parse(match.Groups[4].Value),
-                            match.Groups[5].Value,
-                            ulong.Parse(match.Groups[6].Value)
+                            ushort.Parse(match.Groups[3].Value),
+                            match.Groups[4].Value,
+                            ulong.Parse(match.Groups[5].Value)
                         );
                         _serialized.Text = serializedData;
                         buttonState.SerializedDataValid = true;
@@ -214,7 +213,7 @@ namespace LoLPlayerSub
             return new ManagementObjectSearcher("SELECT CommandLine FROM Win32_Process WHERE Name LIKE '%League of Legends%'").Get();
         }
 
-        private String SerializeGameInfo(String leagueRelease, String airClientRelease, String serverAddress, ushort port, String encryptionKey, ulong summonerId)
+        private String SerializeGameInfo(String leagueRelease, String serverAddress, ushort port, String encryptionKey, ulong summonerId)
         {
             Log("Serializing Game data");
             List<byte> a = new List<byte>();
@@ -225,12 +224,6 @@ namespace LoLPlayerSub
             for (int i = 1; i <= 4; i++)
             {
                 a.Add(Byte.Parse(leagueReleaseMatch.Groups[i].Value));
-            }
-            Log("Writing AIR client version");
-            Match airClientMatch = versionSplitRegex.Match(airClientRelease);
-            for (int i = 1; i <= 4; i++)
-            {
-                a.Add(Byte.Parse(airClientMatch.Groups[i].Value));
             }
             Log("Writing server IP");
             Match serverAddressMatch = versionSplitRegex.Match(serverAddress);
@@ -284,33 +277,26 @@ namespace LoLPlayerSub
                 gameClientString.Append(".");
                 gameClientString.Append(serializedData[i].ToString());
             }
-            Log("Rebuilding AIR client version string");
-            StringBuilder airClientString = new StringBuilder(serializedData[10].ToString());
-            for (int i = 11; i <= 13; i++)
-            {
-                airClientString.Append(".");
-                airClientString.Append(serializedData[i].ToString());
-            }
             Log("Rebuilding server IP address");
-            StringBuilder serverAddress = new StringBuilder(serializedData[14].ToString());
-            for (int i = 15; i <= 17; i++)
+            StringBuilder serverAddress = new StringBuilder(serializedData[10].ToString());
+            for (int i = 11; i <= 13; i++)
             {
                 serverAddress.Append(".");
                 serverAddress.Append(serializedData[i].ToString());
             }
             Log("Reading port number");
-            ushort port = BitConverter.ToUInt16(serializedData, 18);
+            ushort port = BitConverter.ToUInt16(serializedData, 14);
             if (BitConverter.IsLittleEndian) port = (ushort)IPAddress.NetworkToHostOrder((Int16)port);
             Log("Reading player encryption key");
-            int encryptionKeyLength = serializedData.Length - 32;
-            String encryptionKey = Convert.ToBase64String(serializedData, 20, encryptionKeyLength, Base64FormattingOptions.None);
+            int encryptionKeyLength = serializedData.Length - 28;
+            String encryptionKey = Convert.ToBase64String(serializedData, 16, encryptionKeyLength, Base64FormattingOptions.None);
             Log("Reading player summoner ID");
             ulong summonerId = BitConverter.ToUInt64(serializedData, serializedData.Length - 12);
             if (BitConverter.IsLittleEndian) summonerId = (ulong)IPAddress.NetworkToHostOrder((Int64)summonerId);
 
             return new String[]{ 
                 String.Format(processNameFormatString, baseDir, gameClientString.ToString()),
-                String.Format(processArgsFormatString, baseDir, airClientString.ToString(), serverAddress.ToString(), port, encryptionKey, summonerId)
+                String.Format(processArgsFormatString, serverAddress.ToString(), port, encryptionKey, summonerId)
             };
         }
 
